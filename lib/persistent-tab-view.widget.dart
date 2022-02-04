@@ -581,39 +581,33 @@ class _PersistentTabViewState extends State<PersistentTabView> {
           animatePadding: _isAnimating! || _isCompleted!,
           tabBar: PersistentBottomNavBar(
             navBarEssentials: NavBarEssentials(
-              selectedIndex: _controller!.index,
-              previousIndex: _previousIndex,
-              padding: widget.padding,
-              selectedScreenBuildContext: _contextList[_controller!.index],
-              itemAnimationProperties: widget.itemAnimationProperties,
-              items: widget.items,
-              backgroundColor: widget.backgroundColor,
-              navBarHeight: _navBarHeight,
-              popScreensOnTapOfSelectedTab:
-                  widget.popAllScreensOnTapOfSelectedTab ?? true,
-              onItemSelected: widget.onItemSelected != null
-                  ? (int index) {
-                      if (_controller!.index != _previousIndex) {
-                        _previousIndex = _controller!.index;
-                      }
-                      if ((widget.popAllScreensOnTapOfSelectedTab ?? true) &&
-                          _previousIndex == index) {
-                        popAllScreens();
-                      }
-                      _controller!.index = index;
-                      widget.onItemSelected!(index);
-                    }
-                  : (int index) {
-                      if (_controller!.index != _previousIndex) {
-                        _previousIndex = _controller!.index;
-                      }
-                      if ((widget.popAllScreensOnTapOfSelectedTab ?? true) &&
-                          _previousIndex == index) {
-                        popAllScreens();
-                      }
-                      _controller!.index = index;
-                    },
-            ),
+                selectedIndex: _controller!.index,
+                previousIndex: _previousIndex,
+                padding: widget.padding,
+                selectedScreenBuildContext: _contextList[_controller!.index],
+                itemAnimationProperties: widget.itemAnimationProperties,
+                items: widget.items,
+                backgroundColor: widget.backgroundColor,
+                navBarHeight: _navBarHeight,
+                popScreensOnTapOfSelectedTab:
+                    widget.popAllScreensOnTapOfSelectedTab ?? true,
+                onItemSelected: (int index) {
+                  if (_controller!.index != _previousIndex) {
+                    _previousIndex = _controller!.index;
+                  }
+                  /*
+                  if ((widget.popAllScreensOnTapOfSelectedTab ?? true) &&
+                      _previousIndex == index) {
+                    popAllScreens();
+                  } */
+                  /// For my Specific purpose
+                  /// I want to pop all screens as user presses an item
+                  _controller!.index = index;
+                  if (widget.onItemSelected != null) {
+                    widget.onItemSelected!(index);
+                  }
+                  popAllScreens();
+                }),
             isCustomWidget: widget.isCustomWidget,
             navBarDecoration: widget.decoration,
             margin: widget.margin,
@@ -713,29 +707,22 @@ class _PersistentTabViewState extends State<PersistentTabView> {
   }
 
   void popAllScreens() {
-    if (widget.popAllScreensOnTapOfSelectedTab!) {
-      if (widget.items![_controller!.index]
-                  .onSelectedTabPressWhenNoScreensPushed !=
-              null &&
-          !Navigator.of(_contextList[_controller!.index]!).canPop()) {
-        widget.items![_controller!.index]
-            .onSelectedTabPressWhenNoScreensPushed!();
+    final ctx = _contextList[_controller!.index];
+    final currentItem = widget.items![_controller!.index];
+
+    if (ctx != null) {
+      if (currentItem.onSelectedTabPressWhenNoScreensPushed != null &&
+          !Navigator.of(ctx).canPop()) {
+        currentItem.onSelectedTabPressWhenNoScreensPushed!();
       }
 
       if (widget.popActionScreens == PopActionScreensType.once) {
-        if (Navigator.of(_contextList[_controller!.index]!).canPop()) {
-          Navigator.of(_contextList[_controller!.index]!).pop(context);
+        if (Navigator.of(ctx).canPop()) {
+          Navigator.of(ctx).pop(context);
           return;
         }
       } else {
-        Navigator.popUntil(
-            _contextList[_controller!.index]!,
-            ModalRoute.withName(widget.isCustomWidget!
-                ? (widget.routeAndNavigatorSettings?.initialRoute ??
-                    '/9f580fc5-c252-45d0-af25-9429992db112')
-                : widget.items![_controller!.index].routeAndNavigatorSettings
-                        .initialRoute ??
-                    '/9f580fc5-c252-45d0-af25-9429992db112'));
+        Navigator.popUntil(ctx, (route) => route.isFirst);
       }
     }
   }
